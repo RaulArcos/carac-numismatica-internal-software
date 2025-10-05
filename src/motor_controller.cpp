@@ -72,8 +72,8 @@ void MotorController::initializePins() {
     pinMode(Config::Pins::LIMIT_SWITCH_1, INPUT_PULLUP);
     pinMode(Config::Pins::LIMIT_SWITCH_2, INPUT_PULLUP);
     
-    servoLeft.attach(Config::Pins::SERVO_LEFT, Config::Servo::MIN_PULSE_WIDTH, Config::Servo::MAX_PULSE_WIDTH);
-    servoRight.attach(Config::Pins::SERVO_RIGHT, Config::Servo::MIN_PULSE_WIDTH, Config::Servo::MAX_PULSE_WIDTH);
+    servoLeft.attach(Config::Pins::SERVO_LEFT, Config::Servo::MIN_PULSE_US, Config::Servo::MAX_PULSE_US);
+    servoRight.attach(Config::Pins::SERVO_RIGHT, Config::Servo::MIN_PULSE_US, Config::Servo::MAX_PULSE_US);
 }
 
 void MotorController::setServosToNeutral() {

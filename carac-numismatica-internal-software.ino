@@ -1,11 +1,11 @@
 #include "include/system_controller.h"
 
-SystemController system;
+SystemController systemController;
 
 void setup() {
-  system.begin();
+  systemController.begin();
 }
 
 void loop() {
-  system.update();
+  systemController.update();
 }

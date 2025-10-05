@@ -3,29 +3,34 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
-#include <map>
 #include "Config.h"
 
 class Communication {
 public:
-    typedef std::function<void(const JsonDocument&)> CommandHandler;
+    typedef std::function<void(JsonObject)> MessageHandler;
     
     Communication();
     void begin();
     void update();
-    void registerCommandHandler(const String& command, CommandHandler handler);
-    void sendResponse(bool success, const String& message);
-    void sendResponse(bool success, const String& message, JsonObject data);
-    void sendStatusUpdate();
-
+    void registerMessageHandler(const char* messageType, MessageHandler handler);
+    
+    // Send responses
+    void sendSuccess(const char* message);
+    void sendSuccess(const char* message, JsonObject data);
+    void sendError(const char* message, const char* errorCode);
+    void sendError(const char* message, const char* errorCode, JsonObject data);
+    void sendStatus(JsonObject statusPayload);
+    
+    // Send events
+    void sendEvent(const char* eventType, JsonObject payload);
+    
 private:
     char inputBuffer[Config::Communication::BUFFER_SIZE];
     int bufferIndex;
-    unsigned long lastPingTime;
-    std::map<String, CommandHandler> commandHandlers;
+    MessageHandler handlers[20];
+    const char* handlerTypes[20];
+    uint8_t handlerCount;
     
-    void processCommand(const char* jsonCommand);
-    void handlePingCommand();
-    void handleStatusCommand();
-    int getFreeMemory();
+    void processMessage(const char* jsonMessage);
+    void sendMessage(const char* type, JsonObject payload);
 };
