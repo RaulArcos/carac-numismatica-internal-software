@@ -1,6 +1,7 @@
 #include "../include/motor_controller.h"
 
-MotorController::MotorController() {}
+MotorController::MotorController() {
+}
 
 void MotorController::begin() {
     initializePins();

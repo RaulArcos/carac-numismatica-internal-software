@@ -1,13 +1,12 @@
 #include "../include/system_controller.h"
 
 SystemController::SystemController() 
-    : ledTestState(false), motorPosition(0) {
-    // Initialize ring intensities
-    for (int i = 0; i < 4; i++) {
+    : ledTestState(false)
+    , motorPosition(0) {
+    for (int i = 0; i < NUM_RING_CHANNELS; i++) {
         ringIntensities[i] = 0;
     }
     
-    // Initialize sequence state
     sequenceState.active = false;
     sequenceState.currentPhoto = 0;
     sequenceState.totalPhotos = 0;
@@ -18,27 +17,23 @@ SystemController::SystemController()
 }
 
 void SystemController::begin() {
-    // Initialize hardware
     comm.begin();
-    motors.begin();
-    leds.begin();
-    weight.begin();
+    // motors.begin();
+    // leds.begin();
+    // weight.begin();
     
-    // Initialize camera trigger pin
-    pinMode(Config::Pins::CAMERA_TRIGGER, OUTPUT);
-    digitalWrite(Config::Pins::CAMERA_TRIGGER, LOW);
+    // pinMode(Config::Pins::CAMERA_TRIGGER, OUTPUT);
+    // digitalWrite(Config::Pins::CAMERA_TRIGGER, LOW);
     
-    // Initialize test LED pin
-    pinMode(Config::Pins::LED_TEST, OUTPUT);
-    digitalWrite(Config::Pins::LED_TEST, LOW);
+    // pinMode(Config::Pins::LED_TEST, OUTPUT);
+    // digitalWrite(Config::Pins::LED_TEST, LOW);
     
-    // Register protocol message handlers
     registerMessageHandlers();
 }
 
 void SystemController::update() {
     comm.update();
-    processPhotoSequence();
+    // processPhotoSequence();
 }
 
 void SystemController::registerMessageHandlers() {
@@ -83,15 +78,10 @@ void SystemController::registerMessageHandlers() {
     });
 }
 
-// ============================================================================
-// Protocol Message Handlers
-// ============================================================================
-
 void SystemController::handleLightingSet(JsonObject payload) {
     const char* channel = payload["channel"];
     int intensity = payload["intensity"] | 0;
     
-    // Validate channel
     int ringIndex = getRingIndexFromChannel(channel);
     if (ringIndex == -1) {
         StaticJsonDocument<256> errorDoc;
@@ -106,7 +96,6 @@ void SystemController::handleLightingSet(JsonObject payload) {
         return;
     }
     
-    // Validate intensity
     if (intensity < 0 || intensity > 255) {
         StaticJsonDocument<256> errorDoc;
         JsonObject errorData = errorDoc.to<JsonObject>();
@@ -116,15 +105,12 @@ void SystemController::handleLightingSet(JsonObject payload) {
         return;
     }
     
-    // Set the lighting using the sector method
-    // Map ring index to sector (9 LEDs per sector)
     uint8_t sector = ringIndex * Config::LED::LEDS_PER_SECTOR;
     uint8_t percentage = map(intensity, 0, 255, 0, 100);
     
     leds.setSector(sector, percentage);
     ringIntensities[ringIndex] = intensity;
     
-    // Send success response
     StaticJsonDocument<256> responseDoc;
     JsonObject responseData = responseDoc.to<JsonObject>();
     responseData["channel"] = channel;
@@ -137,7 +123,6 @@ void SystemController::handleMotorPosition(JsonObject payload) {
     const char* direction = payload["direction"];
     int steps = payload.containsKey("steps") ? payload["steps"].as<int>() : Config::Motor::DEFAULT_STEPS;
     
-    // Validate direction
     if (!direction || (strcmp(direction, "forward") != 0 && strcmp(direction, "backward") != 0)) {
         StaticJsonDocument<256> errorDoc;
         JsonObject errorData = errorDoc.to<JsonObject>();
@@ -149,11 +134,10 @@ void SystemController::handleMotorPosition(JsonObject payload) {
         return;
     }
     
-    // Move the DC motor
     unsigned long startTime = millis();
     if (strcmp(direction, "forward") == 0) {
         motors.moveDCMotorRight();
-        delay(steps);  // Simulate movement based on steps
+        delay(steps);
         motorPosition += steps;
     } else {
         motors.moveDCMotorLeft();
@@ -163,7 +147,6 @@ void SystemController::handleMotorPosition(JsonObject payload) {
     motors.stopDCMotor();
     unsigned long duration = millis() - startTime;
     
-    // Send success response
     StaticJsonDocument<256> responseDoc;
     JsonObject responseData = responseDoc.to<JsonObject>();
     responseData["direction"] = direction;
@@ -171,7 +154,6 @@ void SystemController::handleMotorPosition(JsonObject payload) {
     
     comm.sendSuccess("Motor moved successfully", responseData);
     
-    // Send motor complete event
     StaticJsonDocument<256> eventDoc;
     JsonObject eventPayload = eventDoc.to<JsonObject>();
     eventPayload["position"] = motorPosition;
@@ -185,7 +167,6 @@ void SystemController::handleMotorFlip(JsonObject payload) {
     
     comm.sendSuccess("Coin flipped successfully");
     
-    // Send motor complete event
     StaticJsonDocument<256> eventDoc;
     JsonObject eventPayload = eventDoc.to<JsonObject>();
     eventPayload["position"] = motorPosition;
@@ -203,7 +184,6 @@ void SystemController::handleCameraTrigger(JsonObject payload) {
     
     comm.sendSuccess("Camera triggered");
     
-    // Send camera triggered event
     StaticJsonDocument<256> eventDoc;
     JsonObject eventPayload = eventDoc.to<JsonObject>();
     eventPayload["duration"] = duration;
@@ -227,7 +207,6 @@ void SystemController::handlePhotoSequenceStart(JsonObject payload) {
     
     comm.sendSuccess("Photo sequence started");
     
-    // Send sequence started event
     StaticJsonDocument<256> eventDoc;
     JsonObject eventPayload = eventDoc.to<JsonObject>();
     eventPayload["total_photos"] = sequenceState.totalPhotos;
@@ -247,19 +226,16 @@ void SystemController::handleSystemStatus(JsonObject payload) {
     statusPayload["uptime"] = millis();
     statusPayload["firmware_version"] = Config::Communication::FIRMWARE_VERSION;
     
-    // Lighting status
     JsonObject lighting = statusPayload.createNestedObject("lighting");
     lighting["ring_1"] = ringIntensities[0];
     lighting["ring_2"] = ringIntensities[1];
     lighting["ring_3"] = ringIntensities[2];
     lighting["ring_4"] = ringIntensities[3];
     
-    // Motor status
     JsonObject motor = statusPayload.createNestedObject("motor");
     motor["position"] = motorPosition;
     motor["is_moving"] = false;
     
-    // Sequence status
     JsonObject sequence = statusPayload.createNestedObject("sequence");
     sequence["active"] = sequenceState.active;
     sequence["current_photo"] = sequenceState.currentPhoto;
@@ -269,44 +245,16 @@ void SystemController::handleSystemStatus(JsonObject payload) {
 }
 
 void SystemController::handleSystemReset(JsonObject payload) {
-    // Reset all lighting
-    leds.turnOff();
-    for (int i = 0; i < 4; i++) {
-        ringIntensities[i] = 0;
-    }
-    
-    // Stop motors
-    motors.stopDCMotor();
-    motors.moveServoLeft(Config::Servo::NEUTRAL_POSITION);
-    motors.moveServoRight(Config::Servo::NEUTRAL_POSITION);
-    
-    // Stop any active sequence
-    sequenceState.active = false;
-    
-    // Reset test LED
-    ledTestState = false;
-    digitalWrite(Config::Pins::LED_TEST, LOW);
-    
-    // Reset motor position
-    motorPosition = 0;
-    
+    resetSystemState();
     comm.sendSuccess("System reset");
 }
 
 void SystemController::handleSystemEmergencyStop(JsonObject payload) {
-    // Stop everything immediately
-    leds.turnOff();
-    motors.stopDCMotor();
+    stopAllMotors();
+    clearAllLighting();
     
-    // Stop sequence
     if (sequenceState.active) {
-        StaticJsonDocument<256> eventDoc;
-        JsonObject eventPayload = eventDoc.to<JsonObject>();
-        eventPayload["reason"] = "emergency_stop";
-        eventPayload["photos_taken"] = sequenceState.currentPhoto;
-        
-        comm.sendEvent("event_sequence_stopped", eventPayload);
-        
+        sendSequenceStoppedEvent("emergency_stop", sequenceState.currentPhoto);
         sequenceState.active = false;
     }
     
@@ -324,10 +272,6 @@ void SystemController::handleTestLedToggle(JsonObject payload) {
     comm.sendSuccess(ledTestState ? "LED turned on" : "LED turned off", responseData);
 }
 
-// ============================================================================
-// Helper Methods
-// ============================================================================
-
 void SystemController::processPhotoSequence() {
     if (!sequenceState.active) {
         return;
@@ -336,61 +280,31 @@ void SystemController::processPhotoSequence() {
     unsigned long currentTime = millis();
     unsigned long elapsed = currentTime - sequenceState.lastActionTime;
     
-    // Check if it's time to take next photo
     if (elapsed >= (sequenceState.delay * 1000)) {
         sequenceState.currentPhoto++;
         
         if (sequenceState.currentPhoto > sequenceState.totalPhotos) {
-            // Sequence complete
             unsigned long totalDuration = (currentTime - sequenceState.sequenceStartTime) / 1000.0;
-            
-            StaticJsonDocument<256> eventDoc;
-            JsonObject eventPayload = eventDoc.to<JsonObject>();
-            eventPayload["photos_taken"] = sequenceState.totalPhotos;
-            eventPayload["duration"] = totalDuration;
-            
-            comm.sendEvent("event_sequence_completed", eventPayload);
-            
+            sendSequenceCompletedEvent(totalDuration);
             sequenceState.active = false;
             return;
         }
         
-        // Send progress event - waiting
         if (sequenceState.currentPhoto > 1) {
-            StaticJsonDocument<256> progressDoc;
-            JsonObject progressPayload = progressDoc.to<JsonObject>();
-            progressPayload["current_photo"] = sequenceState.currentPhoto;
-            progressPayload["total_photos"] = sequenceState.totalPhotos;
-            progressPayload["action"] = "waiting";
-            comm.sendEvent("event_sequence_progress", progressPayload);
+            sendSequenceProgressEvent("waiting");
         }
         
-        // Send progress event - taking photo
-        StaticJsonDocument<256> progressDoc;
-        JsonObject progressPayload = progressDoc.to<JsonObject>();
-        progressPayload["current_photo"] = sequenceState.currentPhoto;
-        progressPayload["total_photos"] = sequenceState.totalPhotos;
-        progressPayload["action"] = "taking_photo";
-        comm.sendEvent("event_sequence_progress", progressPayload);
+        sendSequenceProgressEvent("taking_photo");
         
-        // Trigger camera
         triggerCamera(Config::Camera::DEFAULT_TRIGGER_DURATION);
         
-        // Send camera triggered event
         StaticJsonDocument<256> cameraDoc;
         JsonObject cameraPayload = cameraDoc.to<JsonObject>();
         cameraPayload["duration"] = Config::Camera::DEFAULT_TRIGGER_DURATION;
         comm.sendEvent("event_camera_triggered", cameraPayload);
         
-        // Auto-flip if enabled and not the last photo
         if (sequenceState.autoFlip && sequenceState.currentPhoto < sequenceState.totalPhotos) {
-            StaticJsonDocument<256> flipProgressDoc;
-            JsonObject flipProgressPayload = flipProgressDoc.to<JsonObject>();
-            flipProgressPayload["current_photo"] = sequenceState.currentPhoto;
-            flipProgressPayload["total_photos"] = sequenceState.totalPhotos;
-            flipProgressPayload["action"] = "flipping_coin";
-            comm.sendEvent("event_sequence_progress", flipProgressPayload);
-            
+            sendSequenceProgressEvent("flipping_coin");
             flipCoin();
         }
         
@@ -405,8 +319,6 @@ void SystemController::triggerCamera(int duration) {
 }
 
 void SystemController::flipCoin() {
-    // Use servos to flip the coin
-    // Move servos in a coordinated motion
     motors.moveServoLeft(Config::Servo::MAX_POSITION);
     delay(100);
     motors.moveServoRight(Config::Servo::MAX_POSITION);
@@ -422,4 +334,55 @@ int SystemController::getRingIndexFromChannel(const char* channel) {
     if (strcmp(channel, "ring_3") == 0) return 2;
     if (strcmp(channel, "ring_4") == 0) return 3;
     return -1;
+}
+
+void SystemController::resetSystemState() {
+    clearAllLighting();
+    stopAllMotors();
+    
+    motors.moveServoLeft(Config::Servo::NEUTRAL_POSITION);
+    motors.moveServoRight(Config::Servo::NEUTRAL_POSITION);
+    
+    sequenceState.active = false;
+    
+    ledTestState = false;
+    digitalWrite(Config::Pins::LED_TEST, LOW);
+    
+    motorPosition = 0;
+}
+
+void SystemController::stopAllMotors() {
+    motors.stopDCMotor();
+}
+
+void SystemController::clearAllLighting() {
+    leds.turnOff();
+    for (int i = 0; i < NUM_RING_CHANNELS; i++) {
+        ringIntensities[i] = 0;
+    }
+}
+
+void SystemController::sendSequenceProgressEvent(const char* action) {
+    StaticJsonDocument<256> progressDoc;
+    JsonObject progressPayload = progressDoc.to<JsonObject>();
+    progressPayload["current_photo"] = sequenceState.currentPhoto;
+    progressPayload["total_photos"] = sequenceState.totalPhotos;
+    progressPayload["action"] = action;
+    comm.sendEvent("event_sequence_progress", progressPayload);
+}
+
+void SystemController::sendSequenceStoppedEvent(const char* reason, int photosTaken) {
+    StaticJsonDocument<256> eventDoc;
+    JsonObject eventPayload = eventDoc.to<JsonObject>();
+    eventPayload["reason"] = reason;
+    eventPayload["photos_taken"] = photosTaken;
+    comm.sendEvent("event_sequence_stopped", eventPayload);
+}
+
+void SystemController::sendSequenceCompletedEvent(unsigned long totalDuration) {
+    StaticJsonDocument<256> eventDoc;
+    JsonObject eventPayload = eventDoc.to<JsonObject>();
+    eventPayload["photos_taken"] = sequenceState.totalPhotos;
+    eventPayload["duration"] = totalDuration;
+    comm.sendEvent("event_sequence_completed", eventPayload);
 }

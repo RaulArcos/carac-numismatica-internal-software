@@ -1,6 +1,8 @@
 #include "../include/led_controller.h"
 
-LEDController::LEDController() : pixels(Config::LED::TOTAL_PIXELS, Config::Pins::LED_STRIP, NEO_GRB + NEO_KHZ800) {}
+LEDController::LEDController() 
+    : pixels(Config::LED::TOTAL_PIXELS, Config::Pins::LED_STRIP, NEO_GRB + NEO_KHZ800) {
+}
 
 void LEDController::begin() {
     pixels.begin();

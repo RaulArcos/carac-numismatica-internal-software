@@ -1,6 +1,8 @@
 #include "../include/weight_sensor.h"
 
-WeightSensor::WeightSensor() : tareOffset(0) {}
+WeightSensor::WeightSensor() 
+    : tareOffset(0) {
+}
 
 void WeightSensor::begin() {
     pinMode(Config::Pins::PD_SCK, OUTPUT);

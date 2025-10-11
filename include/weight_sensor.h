@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "Config.h"
+#include "config.h"
 
 class WeightSensor {
 public:

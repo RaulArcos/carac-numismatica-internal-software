@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
-#include "Config.h"
+#include "config.h"
 
 class LEDController {
 public:

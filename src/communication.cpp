@@ -5,22 +5,19 @@ Communication::Communication() : bufferIndex(0), handlerCount(0), lastHeartbeat(
 void Communication::begin() {
     Serial.begin(Config::Communication::BAUD_RATE);
     
-    // Wait for serial connection
     while (!Serial) {
         delay(10);
     }
     
-    // Send initialization success message
     StaticJsonDocument<Config::Communication::BUFFER_SIZE> doc;
     JsonObject payload = doc.to<JsonObject>();
-    payload["message"] = "ESP32 ready";
+    payload["message"] = "Ready";
     payload["firmware_version"] = Config::Communication::FIRMWARE_VERSION;
     
-    sendMessage("response_success", payload);
+    sendMessage("status", payload);
 }
 
 void Communication::update() {
-    // Read incoming serial data
     while (Serial.available()) {
         char c = Serial.read();
         
@@ -35,7 +32,6 @@ void Communication::update() {
         }
     }
     
-    // Send periodic heartbeat every 5 seconds
     unsigned long currentTime = millis();
     if (currentTime - lastHeartbeat >= 5000) {
         sendHeartbeat();
@@ -64,7 +60,6 @@ void Communication::processMessage(const char* jsonMessage) {
         return;
     }
     
-    // Validate message structure
     const char* type = doc["type"];
     if (!type) {
         sendError("Missing 'type' field", "PARSE_ERROR");
@@ -77,11 +72,9 @@ void Communication::processMessage(const char* jsonMessage) {
     }
     
     JsonObject payload = doc["payload"];
+
+    sendMessage(type, payload);
     
-    // Send acknowledgment that message was received
-    sendMessageAck(type);
-    
-    // Route message to appropriate handler
     bool handled = false;
     for (uint8_t i = 0; i < handlerCount; i++) {
         if (strcmp(handlerTypes[i], type) == 0) {
@@ -147,7 +140,7 @@ void Communication::sendError(const char* message, const char* errorCode, JsonOb
 }
 
 void Communication::sendStatus(JsonObject statusPayload) {
-    sendMessage("response_status", statusPayload);
+    sendMessage("status", statusPayload);
 }
 
 void Communication::sendEvent(const char* eventType, JsonObject payload) {

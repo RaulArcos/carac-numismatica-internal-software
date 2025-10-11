@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <functional>
-#include "Config.h"
+#include "config.h"
 
 class Communication {
 public:
@@ -14,23 +14,25 @@ public:
     void update();
     void registerMessageHandler(const char* messageType, MessageHandler handler);
     
-    // Send responses
     void sendSuccess(const char* message);
     void sendSuccess(const char* message, JsonObject data);
     void sendError(const char* message, const char* errorCode);
     void sendError(const char* message, const char* errorCode, JsonObject data);
     void sendStatus(JsonObject statusPayload);
-    
-    // Send events
     void sendEvent(const char* eventType, JsonObject payload);
     
 private:
+    static constexpr uint8_t MAX_HANDLERS = 20;
+    
     char inputBuffer[Config::Communication::BUFFER_SIZE];
     int bufferIndex;
-    MessageHandler handlers[20];
-    const char* handlerTypes[20];
+    MessageHandler handlers[MAX_HANDLERS];
+    const char* handlerTypes[MAX_HANDLERS];
     uint8_t handlerCount;
+    unsigned long lastHeartbeat;
     
     void processMessage(const char* jsonMessage);
     void sendMessage(const char* type, JsonObject payload);
+    void sendHeartbeat();
+    void sendMessageAck(const char* messageType);
 };

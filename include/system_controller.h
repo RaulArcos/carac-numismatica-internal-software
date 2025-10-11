@@ -14,17 +14,9 @@ public:
     void update();
 
 private:
-    Communication comm;
-    MotorController motors;
-    LEDController leds;
-    WeightSensor weight;
+    static constexpr uint8_t NUM_RING_CHANNELS = 4;
     
-    bool ledTestState;
-    int motorPosition;
-    uint8_t ringIntensities[4];
-    
-    // Photo sequence state
-    struct {
+    struct PhotoSequenceState {
         bool active;
         int currentPhoto;
         int totalPhotos;
@@ -32,11 +24,20 @@ private:
         bool autoFlip;
         unsigned long lastActionTime;
         unsigned long sequenceStartTime;
-    } sequenceState;
+    };
+    
+    Communication comm;
+    MotorController motors;
+    LEDController leds;
+    WeightSensor weight;
+    
+    bool ledTestState;
+    int motorPosition;
+    uint8_t ringIntensities[NUM_RING_CHANNELS];
+    PhotoSequenceState sequenceState;
     
     void registerMessageHandlers();
     
-    // Protocol message handlers
     void handleLightingSet(JsonObject payload);
     void handleMotorPosition(JsonObject payload);
     void handleMotorFlip(JsonObject payload);
@@ -48,9 +49,14 @@ private:
     void handleSystemEmergencyStop(JsonObject payload);
     void handleTestLedToggle(JsonObject payload);
     
-    // Helper methods
     void processPhotoSequence();
     void triggerCamera(int duration);
     void flipCoin();
     int getRingIndexFromChannel(const char* channel);
+    void resetSystemState();
+    void stopAllMotors();
+    void clearAllLighting();
+    void sendSequenceProgressEvent(const char* action);
+    void sendSequenceStoppedEvent(const char* reason, int photosTaken);
+    void sendSequenceCompletedEvent(unsigned long totalDuration);
 };

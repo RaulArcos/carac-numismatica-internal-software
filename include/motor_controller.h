@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <ESP32Servo.h>
-#include "Config.h"
+#include "config.h"
 
 class MotorController {
 public:
