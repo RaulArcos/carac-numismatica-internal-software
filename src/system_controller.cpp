@@ -180,7 +180,7 @@ void SystemController::handleCameraTrigger(JsonObject payload) {
                    payload["duration"].as<int>() : 
                    Config::Camera::DEFAULT_TRIGGER_DURATION;
     
-    triggerCamera(duration);
+    // triggerCamera(duration);
     
     comm.sendSuccess("Camera triggered");
     
@@ -296,7 +296,7 @@ void SystemController::processPhotoSequence() {
         
         sendSequenceProgressEvent("taking_photo");
         
-        triggerCamera(Config::Camera::DEFAULT_TRIGGER_DURATION);
+        // triggerCamera(Config::Camera::DEFAULT_TRIGGER_DURATION);
         
         StaticJsonDocument<256> cameraDoc;
         JsonObject cameraPayload = cameraDoc.to<JsonObject>();
@@ -312,11 +312,11 @@ void SystemController::processPhotoSequence() {
     }
 }
 
-void SystemController::triggerCamera(int duration) {
-    digitalWrite(Config::Pins::CAMERA_TRIGGER, HIGH);
-    delay(duration);
-    digitalWrite(Config::Pins::CAMERA_TRIGGER, LOW);
-}
+// void SystemController::triggerCamera(int duration) {
+//     digitalWrite(Config::Pins::CAMERA_TRIGGER, HIGH);
+//     delay(duration);
+//     digitalWrite(Config::Pins::CAMERA_TRIGGER, LOW);
+// }
 
 void SystemController::flipCoin() {
     motors.moveServoLeft(Config::Servo::MAX_POSITION);

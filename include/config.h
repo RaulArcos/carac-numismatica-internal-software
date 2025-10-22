@@ -1,20 +1,20 @@
 #pragma once
-
 #include <Arduino.h>
 
 namespace Config {
     namespace Pins {
-        constexpr uint8_t DOUT = 4;
-        constexpr uint8_t PD_SCK = 3;
-        constexpr uint8_t DRIVER_MOTOR_A1 = 8;
-        constexpr uint8_t DRIVER_MOTOR_A2 = 9;
-        constexpr uint8_t SERVO_LEFT = 5;
-        constexpr uint8_t SERVO_RIGHT = 11;
-        constexpr uint8_t LIMIT_SWITCH_1 = 2;
-        constexpr uint8_t LIMIT_SWITCH_2 = 12;
-        constexpr uint8_t LED_STRIP = 6;
-        constexpr uint8_t CAMERA_TRIGGER = 7;
-        constexpr uint8_t LED_TEST = 2;
+        constexpr uint8_t DOUT = 27;     
+        constexpr uint8_t PD_SCK = 14;  
+        constexpr uint8_t DRIVER_MOTOR_A1 = 19;
+        constexpr uint8_t DRIVER_MOTOR_A2 = 23;
+        constexpr uint8_t SERVO_LEFT  = 25;
+        constexpr uint8_t SERVO_RIGHT = 26;
+        constexpr uint8_t LIMIT_SWITCH_1 = 32;
+        constexpr uint8_t LIMIT_SWITCH_2 = 33;
+        constexpr uint8_t LED_STRIP = 18;   
+        constexpr uint8_t LED_TEST  = 2;    
+
+        constexpr uint8_t CAMERA_TRIGGER = 22;
     }
 
     namespace Communication {
@@ -37,12 +37,12 @@ namespace Config {
         constexpr uint16_t MAX_PULSE_US = 2700;
         constexpr uint16_t NEUTRAL_POSITION = 710;
         constexpr uint16_t MAX_POSITION = 2500;
-        constexpr uint8_t STEP_SIZE = 10;
+        constexpr uint8_t  STEP_SIZE = 10;
     }
 
     namespace Weight {
-        constexpr uint8_t DEFAULT_SAMPLES = 3;
-        constexpr uint8_t HX711_BITS = 24;
+        constexpr uint8_t  DEFAULT_SAMPLES = 3;
+        constexpr uint8_t  HX711_BITS = 24;
     }
 
     namespace Camera {
