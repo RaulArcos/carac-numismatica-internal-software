@@ -7,10 +7,10 @@ namespace Config {
         constexpr uint8_t PD_SCK = 14;  
         constexpr uint8_t DRIVER_MOTOR_A1 = 19;
         constexpr uint8_t DRIVER_MOTOR_A2 = 23;
-        constexpr uint8_t SERVO_LEFT  = 25;
-        constexpr uint8_t SERVO_RIGHT = 26;
+        constexpr uint8_t SERVO_LEFT  = 18;
+        constexpr uint8_t SERVO_RIGHT = 19;
         constexpr uint8_t LIMIT_SWITCH_1 = 32;
-        constexpr uint8_t LIMIT_SWITCH_2 = 33;
+        constexpr uint8_t LIMIT_SWITCH_2 = 17;
         constexpr uint8_t LED_STRIP = 18;   
         constexpr uint8_t LED_TEST  = 2;    
 
