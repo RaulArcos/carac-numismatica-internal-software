@@ -2,7 +2,8 @@
 
 SystemController::SystemController() 
     : ledTestState(false)
-    , motorPosition(0) {
+    , motorPosition(0)
+    , flipCount(0) {
     for (int i = 0; i < NUM_RING_CHANNELS; i++) {
         ringIntensities[i] = 0;
     }
@@ -18,15 +19,15 @@ SystemController::SystemController()
 
 void SystemController::begin() {
     comm.begin();
-    // motors.begin();
-    // leds.begin();
+    motors.begin();
+    leds.begin();
     // weight.begin();
     
     // pinMode(Config::Pins::CAMERA_TRIGGER, OUTPUT);
     // digitalWrite(Config::Pins::CAMERA_TRIGGER, LOW);
     
-    // pinMode(Config::Pins::LED_TEST, OUTPUT);
-    // digitalWrite(Config::Pins::LED_TEST, LOW);
+    pinMode(Config::Pins::LED_TEST, OUTPUT);
+    digitalWrite(Config::Pins::LED_TEST, LOW);
     
     registerMessageHandlers();
 }
@@ -150,7 +151,7 @@ void SystemController::handleMotorPosition(JsonObject payload) {
     StaticJsonDocument<256> responseDoc;
     JsonObject responseData = responseDoc.to<JsonObject>();
     responseData["direction"] = direction;
-    responseData["steps"] = steps;
+    responseData["position"] = motorPosition;
     
     comm.sendSuccess("Motor moved successfully", responseData);
     
@@ -164,8 +165,13 @@ void SystemController::handleMotorPosition(JsonObject payload) {
 
 void SystemController::handleMotorFlip(JsonObject payload) {
     flipCoin();
+    flipCount++;
     
-    comm.sendSuccess("Coin flipped successfully");
+    StaticJsonDocument<256> responseDoc;
+    JsonObject responseData = responseDoc.to<JsonObject>();
+    responseData["flip_count"] = flipCount;
+    
+    comm.sendSuccess("Coin flipped successfully", responseData);
     
     StaticJsonDocument<256> eventDoc;
     JsonObject eventPayload = eventDoc.to<JsonObject>();
@@ -216,15 +222,22 @@ void SystemController::handlePhotoSequenceStart(JsonObject payload) {
 }
 
 void SystemController::handleSystemPing(JsonObject payload) {
-    comm.sendSuccess("Pong");
+    StaticJsonDocument<256> responseDoc;
+    JsonObject responseData = responseDoc.to<JsonObject>();
+    responseData["uptime_ms"] = millis();
+    
+    comm.sendSuccess("Pong", responseData);
 }
 
 void SystemController::handleSystemStatus(JsonObject payload) {
     StaticJsonDocument<Config::Communication::BUFFER_SIZE> statusDoc;
     JsonObject statusPayload = statusDoc.to<JsonObject>();
     
-    statusPayload["uptime"] = millis();
+    statusPayload["message"] = "System ready";
     statusPayload["firmware_version"] = Config::Communication::FIRMWARE_VERSION;
+    statusPayload["motor_position"] = motorPosition;
+    statusPayload["servos_ready"] = true;
+    statusPayload["uptime_ms"] = millis();
     
     JsonObject lighting = statusPayload.createNestedObject("lighting");
     lighting["ring_1"] = ringIntensities[0];
@@ -349,6 +362,7 @@ void SystemController::resetSystemState() {
     digitalWrite(Config::Pins::LED_TEST, LOW);
     
     motorPosition = 0;
+    flipCount = 0;
 }
 
 void SystemController::stopAllMotors() {

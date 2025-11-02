@@ -140,7 +140,7 @@ void Communication::sendError(const char* message, const char* errorCode, JsonOb
 }
 
 void Communication::sendStatus(JsonObject statusPayload) {
-    sendMessage("status", statusPayload);
+    sendMessage("response_status", statusPayload);
 }
 
 void Communication::sendEvent(const char* eventType, JsonObject payload) {
