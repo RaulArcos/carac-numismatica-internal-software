@@ -3,8 +3,8 @@
 
 namespace Config {
     namespace Pins {
-        constexpr uint8_t DOUT = 27;     
-        constexpr uint8_t PD_SCK = 14;  
+        constexpr uint8_t DOUT = 4;     
+        constexpr uint8_t PD_SCK = 16;  
         constexpr uint8_t DRIVER_MOTOR_A1 = 19;
         constexpr uint8_t DRIVER_MOTOR_A2 = 23;
         constexpr uint8_t SERVO_LEFT  = 18;

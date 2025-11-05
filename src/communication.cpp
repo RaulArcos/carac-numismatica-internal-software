@@ -9,6 +9,9 @@ void Communication::begin() {
         delay(10);
     }
     
+    // Initialize lastHeartbeat to current time to start heartbeat timer
+    lastHeartbeat = millis();
+    
     StaticJsonDocument<Config::Communication::BUFFER_SIZE> doc;
     JsonObject payload = doc.to<JsonObject>();
     payload["message"] = "Ready";

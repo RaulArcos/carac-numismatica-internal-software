@@ -3,7 +3,8 @@
 SystemController::SystemController() 
     : ledTestState(false)
     , motorPosition(0)
-    , flipCount(0) {
+    , flipCount(0)
+    , lastWeightReading(0) {
     for (int i = 0; i < NUM_RING_CHANNELS; i++) {
         ringIntensities[i] = 0;
     }
@@ -21,7 +22,7 @@ void SystemController::begin() {
     comm.begin();
     motors.begin();
     leds.begin();
-    // weight.begin();
+    weight.begin();
     
     // pinMode(Config::Pins::CAMERA_TRIGGER, OUTPUT);
     // digitalWrite(Config::Pins::CAMERA_TRIGGER, LOW);
@@ -29,12 +30,29 @@ void SystemController::begin() {
     pinMode(Config::Pins::LED_TEST, OUTPUT);
     digitalWrite(Config::Pins::LED_TEST, LOW);
     
+    lastWeightReading = millis();
+    
     registerMessageHandlers();
 }
 
 void SystemController::update() {
     comm.update();
     // processPhotoSequence();
+    
+    // Send weight reading every second
+    unsigned long currentTime = millis();
+    if (currentTime - lastWeightReading >= 1000) {
+        float weightValue = weight.getWeight();
+        
+        StaticJsonDocument<256> weightDoc;
+        JsonObject weightPayload = weightDoc.to<JsonObject>();
+        weightPayload["weight"] = weightValue;
+        weightPayload["timestamp"] = currentTime;
+        
+        comm.sendEvent("event_weight_reading", weightPayload);
+        
+        lastWeightReading = currentTime;
+    }
 }
 
 void SystemController::registerMessageHandlers() {

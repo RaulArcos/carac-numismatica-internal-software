@@ -36,6 +36,7 @@ private:
     uint8_t ringIntensities[NUM_RING_CHANNELS];
     PhotoSequenceState sequenceState;
     int flipCount;
+    unsigned long lastWeightReading;
     
     void registerMessageHandlers();
     
