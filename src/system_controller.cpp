@@ -124,10 +124,11 @@ void SystemController::handleLightingSet(JsonObject payload) {
         return;
     }
     
-    uint8_t sector = ringIndex * Config::LED::LEDS_PER_SECTOR;
+    // Map ring channel to sector index and set that sector across all rings
+    // ring_1 → sector 0 (first sector), ring_2 → sector 1, etc.
+    uint8_t sectorIndex = ringIndex;  // ringIndex is already 0-3, which matches sector indices
     uint8_t percentage = map(intensity, 0, 255, 0, 100);
-    
-    leds.setSector(sector, percentage);
+    leds.setSectorAcrossAllRings(sectorIndex, percentage);
     ringIntensities[ringIndex] = intensity;
     
     StaticJsonDocument<256> responseDoc;
