@@ -155,22 +155,61 @@ void SystemController::handleMotorPosition(JsonObject payload) {
     }
     
     unsigned long startTime = millis();
+    unsigned long targetTime = startTime + steps;
+    bool stoppedByLimitSwitch = false;
+    
     if (strcmp(direction, "forward") == 0) {
         motors.moveDCMotorRight();
-        delay(steps);
-        motorPosition += steps;
+        while (millis() < targetTime) {
+            // Check if limit switch 2 is activated (moving right)
+            if (motors.isLimitSwitch2Pressed()) {
+                motors.stopDCMotor();
+                stoppedByLimitSwitch = true;
+                break;
+            }
+            // Also check limit switch 1 as a safety measure
+            if (motors.isLimitSwitch1Pressed()) {
+                motors.stopDCMotor();
+                stoppedByLimitSwitch = true;
+                break;
+            }
+            delay(10); // Small delay to prevent excessive CPU usage
+        }
+        if (!stoppedByLimitSwitch) {
+            motors.stopDCMotor();
+        }
+        motorPosition += (millis() - startTime);
     } else {
         motors.moveDCMotorLeft();
-        delay(steps);
-        motorPosition -= steps;
+        while (millis() < targetTime) {
+            // Check if limit switch 1 is activated (moving left)
+            if (motors.isLimitSwitch1Pressed()) {
+                motors.stopDCMotor();
+                stoppedByLimitSwitch = true;
+                break;
+            }
+            // Also check limit switch 2 as a safety measure
+            if (motors.isLimitSwitch2Pressed()) {
+                motors.stopDCMotor();
+                stoppedByLimitSwitch = true;
+                break;
+            }
+            delay(10); // Small delay to prevent excessive CPU usage
+        }
+        if (!stoppedByLimitSwitch) {
+            motors.stopDCMotor();
+        }
+        motorPosition -= (millis() - startTime);
     }
-    motors.stopDCMotor();
     unsigned long duration = millis() - startTime;
     
     StaticJsonDocument<256> responseDoc;
     JsonObject responseData = responseDoc.to<JsonObject>();
     responseData["direction"] = direction;
     responseData["position"] = motorPosition;
+    if (stoppedByLimitSwitch) {
+        responseData["stopped_by_limit_switch"] = true;
+    }
     
     comm.sendSuccess("Motor moved successfully", responseData);
     
@@ -178,6 +217,9 @@ void SystemController::handleMotorPosition(JsonObject payload) {
     JsonObject eventPayload = eventDoc.to<JsonObject>();
     eventPayload["position"] = motorPosition;
     eventPayload["duration"] = (int)duration;
+    if (stoppedByLimitSwitch) {
+        eventPayload["stopped_by_limit_switch"] = true;
+    }
     
     comm.sendEvent("event_motor_complete", eventPayload);
 }

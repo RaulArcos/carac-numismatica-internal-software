@@ -1,7 +1,7 @@
 #include "../include/weight_sensor.h"
 
 WeightSensor::WeightSensor() 
-    : scale(1.0f) {
+    : scale(Config::Weight::SCALE_FACTOR) {
 }
 
 void WeightSensor::begin() {
