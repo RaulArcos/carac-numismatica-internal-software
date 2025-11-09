@@ -5,19 +5,18 @@ namespace Config {
     namespace Pins {
         constexpr uint8_t DOUT = 4;     
         constexpr uint8_t PD_SCK = 16;  
-        constexpr uint8_t DRIVER_MOTOR_A1 = 19;
-        constexpr uint8_t DRIVER_MOTOR_A2 = 23;
+        constexpr uint8_t DRIVER_MOTOR_A1 = 22;
+        constexpr uint8_t DRIVER_MOTOR_A2 = 17;
         constexpr uint8_t SERVO_LEFT  = 18;
         constexpr uint8_t SERVO_RIGHT = 19;
         constexpr uint8_t LIMIT_SWITCH_1 = 21;
         constexpr uint8_t LIMIT_SWITCH_2 = 5;
         constexpr uint8_t LED_STRIP = 13;   
-        constexpr uint8_t LED_TEST  = 2;    
+        constexpr uint8_t LED_TEST  = 2;
+        constexpr uint8_t LED_BACKLIGHT = 12;    
     }
 
     namespace Communication {
-        // Note: Protocol specifies 9600 baud, but 115200 is used for better performance
-        // Change to 9600 if compatibility with protocol specification is required
         constexpr uint32_t BAUD_RATE = 115200;
         constexpr uint16_t BUFFER_SIZE = 512;
         constexpr uint32_t PING_INTERVAL = 5000;

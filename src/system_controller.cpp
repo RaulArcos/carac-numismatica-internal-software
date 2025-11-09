@@ -98,50 +98,95 @@ void SystemController::registerMessageHandlers() {
 }
 
 void SystemController::handleLightingSet(JsonObject payload) {
-    const char* channel = payload["channel"];
-    int intensity = payload["intensity"] | 0;
-    
-    int ringIndex = getRingIndexFromChannel(channel);
-    if (ringIndex == -1) {
-        StaticJsonDocument<256> errorDoc;
-        JsonObject errorData = errorDoc.to<JsonObject>();
-        errorData["received_channel"] = channel;
-        JsonArray validChannels = errorData.createNestedArray("valid_channels");
-        validChannels.add("ring_1");
-        validChannels.add("ring_2");
-        validChannels.add("ring_3");
-        validChannels.add("ring_4");
-        comm.sendError("Invalid lighting channel", "INVALID_CHANNEL", errorData);
-        return;
+    if (payload.containsKey("sections")) {
+        JsonObject sections = payload["sections"];
+        
+        const char* ringNames[4] = {"ring_1", "ring_2", "ring_3", "ring_4"};
+        int intensities[4];
+        
+        for (int i = 0; i < 4; i++) {
+            if (sections.containsKey(ringNames[i])) {
+                int intensity = sections[ringNames[i]] | 0;
+                
+                if (intensity < 0 || intensity > 255) {
+                    StaticJsonDocument<256> errorDoc;
+                    JsonObject errorData = errorDoc.to<JsonObject>();
+                    errorData["received_intensity"] = intensity;
+                    errorData["ring"] = ringNames[i];
+                    errorData["valid_range"] = "0-255";
+                    comm.sendError("Intensity must be 0-255", "INVALID_INTENSITY", errorData);
+                    return;
+                }
+                intensities[i] = intensity;
+            } else {
+                intensities[i] = ringIntensities[i];
+            }
+        }
+        
+        for (int i = 0; i < 4; i++) {
+            leds.setSectorAcrossAllRings(i, intensities[i]);
+            ringIntensities[i] = intensities[i];
+        }
+        
+        StaticJsonDocument<256> responseDoc;
+        JsonObject responseData = responseDoc.to<JsonObject>();
+        JsonObject responseSections = responseData.createNestedObject("sections");
+        responseSections["ring_1"] = ringIntensities[0];
+        responseSections["ring_2"] = ringIntensities[1];
+        responseSections["ring_3"] = ringIntensities[2];
+        responseSections["ring_4"] = ringIntensities[3];
+        
+        comm.sendSuccess("Lighting set successfully", responseData);
+    } 
+    else if (payload.containsKey("channel")) {
+        const char* channel = payload["channel"];
+        int intensity = payload["intensity"] | 0;
+        
+        int ringIndex = getRingIndexFromChannel(channel);
+        if (ringIndex == -1) {
+            StaticJsonDocument<256> errorDoc;
+            JsonObject errorData = errorDoc.to<JsonObject>();
+            errorData["received_channel"] = channel;
+            JsonArray validChannels = errorData.createNestedArray("valid_channels");
+            validChannels.add("ring_1");
+            validChannels.add("ring_2");
+            validChannels.add("ring_3");
+            validChannels.add("ring_4");
+            comm.sendError("Invalid lighting channel", "INVALID_CHANNEL", errorData);
+            return;
+        }
+        
+        if (intensity < 0 || intensity > 255) {
+            StaticJsonDocument<256> errorDoc;
+            JsonObject errorData = errorDoc.to<JsonObject>();
+            errorData["received_intensity"] = intensity;
+            errorData["valid_range"] = "0-255";
+            comm.sendError("Intensity must be 0-255", "INVALID_INTENSITY", errorData);
+            return;
+        }
+        
+        // Map ring channel to sector index and set that sector across all rings
+        // ring_1 → sector 0 (first sector), ring_2 → sector 1, etc.
+        uint8_t sectorIndex = ringIndex;  // ringIndex is already 0-3, which matches sector indices
+        uint8_t percentage = map(intensity, 0, 255, 0, 100);
+        leds.setSectorAcrossAllRings(sectorIndex, percentage);
+        ringIntensities[ringIndex] = intensity;
+        
+        StaticJsonDocument<256> responseDoc;
+        JsonObject responseData = responseDoc.to<JsonObject>();
+        responseData["channel"] = channel;
+        responseData["intensity"] = intensity;
+        
+        comm.sendSuccess("Lighting set successfully", responseData);
+    } 
+    // Neither format provided
+    else {
+        comm.sendError("Missing 'sections' or 'channel' field", "INVALID_FORMAT");
     }
-    
-    if (intensity < 0 || intensity > 255) {
-        StaticJsonDocument<256> errorDoc;
-        JsonObject errorData = errorDoc.to<JsonObject>();
-        errorData["received_intensity"] = intensity;
-        errorData["valid_range"] = "0-255";
-        comm.sendError("Intensity must be 0-255", "INVALID_INTENSITY", errorData);
-        return;
-    }
-    
-    // Map ring channel to sector index and set that sector across all rings
-    // ring_1 → sector 0 (first sector), ring_2 → sector 1, etc.
-    uint8_t sectorIndex = ringIndex;  // ringIndex is already 0-3, which matches sector indices
-    uint8_t percentage = map(intensity, 0, 255, 0, 100);
-    leds.setSectorAcrossAllRings(sectorIndex, percentage);
-    ringIntensities[ringIndex] = intensity;
-    
-    StaticJsonDocument<256> responseDoc;
-    JsonObject responseData = responseDoc.to<JsonObject>();
-    responseData["channel"] = channel;
-    responseData["intensity"] = intensity;
-    
-    comm.sendSuccess("Lighting set successfully", responseData);
 }
 
 void SystemController::handleMotorPosition(JsonObject payload) {
     const char* direction = payload["direction"];
-    int steps = payload.containsKey("steps") ? payload["steps"].as<int>() : Config::Motor::DEFAULT_STEPS;
     
     if (!direction || (strcmp(direction, "forward") != 0 && strcmp(direction, "backward") != 0)) {
         StaticJsonDocument<256> errorDoc;
@@ -155,25 +200,18 @@ void SystemController::handleMotorPosition(JsonObject payload) {
     }
     
     unsigned long startTime = millis();
-    unsigned long targetTime = startTime + steps;
+    unsigned long timeoutTime = startTime + 5000;
     bool stoppedByLimitSwitch = false;
     
     if (strcmp(direction, "forward") == 0) {
         motors.moveDCMotorRight();
-        while (millis() < targetTime) {
-            // Check if limit switch 2 is activated (moving right)
+        while (millis() < timeoutTime) {
             if (motors.isLimitSwitch2Pressed()) {
                 motors.stopDCMotor();
                 stoppedByLimitSwitch = true;
                 break;
             }
-            // Also check limit switch 1 as a safety measure
-            if (motors.isLimitSwitch1Pressed()) {
-                motors.stopDCMotor();
-                stoppedByLimitSwitch = true;
-                break;
-            }
-            delay(10); // Small delay to prevent excessive CPU usage
+            delay(10);
         }
         if (!stoppedByLimitSwitch) {
             motors.stopDCMotor();
@@ -181,20 +219,13 @@ void SystemController::handleMotorPosition(JsonObject payload) {
         motorPosition += (millis() - startTime);
     } else {
         motors.moveDCMotorLeft();
-        while (millis() < targetTime) {
-            // Check if limit switch 1 is activated (moving left)
+        while (millis() < timeoutTime) {
             if (motors.isLimitSwitch1Pressed()) {
                 motors.stopDCMotor();
                 stoppedByLimitSwitch = true;
                 break;
             }
-            // Also check limit switch 2 as a safety measure
-            if (motors.isLimitSwitch2Pressed()) {
-                motors.stopDCMotor();
-                stoppedByLimitSwitch = true;
-                break;
-            }
-            delay(10); // Small delay to prevent excessive CPU usage
+            delay(10);
         }
         if (!stoppedByLimitSwitch) {
             motors.stopDCMotor();
