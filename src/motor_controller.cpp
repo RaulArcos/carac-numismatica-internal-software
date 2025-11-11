@@ -12,27 +12,27 @@ void MotorController::executeSequence(uint8_t sequenceType) {
     if (sequenceType == 1) {
         for (int i = Config::Servo::NEUTRAL_POSITION; i <= Config::Servo::MAX_POSITION; i += Config::Servo::STEP_SIZE) {
             servoLeft.writeMicroseconds(i);
-            delay(10);
+            delay(Config::Motor::SERVO_DELAY_MS);
         }
         
         waitForLimitSwitch(Config::Pins::LIMIT_SWITCH_1);
-        delay(1000);
+        delay(Config::Timing::LIMIT_SWITCH_WAIT_DELAY_MS);
         
         for (int i = Config::Servo::NEUTRAL_POSITION; i <= Config::Servo::MAX_POSITION; i += Config::Servo::STEP_SIZE) {
             servoRight.writeMicroseconds(i);
-            delay(10);
-            servoLeft.writeMicroseconds(3210 - i);
-            delay(10);
+            delay(Config::Motor::SERVO_DELAY_MS);
+            servoLeft.writeMicroseconds(Config::Motor::SERVO_MAX_CALCULATED - i);
+            delay(Config::Motor::SERVO_DELAY_MS);
         }
-        delay(500);
+        delay(Config::Motor::SERVO_SEQUENCE_DELAY_MS);
         
-        for (int i = Config::Servo::NEUTRAL_POSITION; i >= 700; i -= Config::Servo::STEP_SIZE) {
+        for (int i = Config::Servo::NEUTRAL_POSITION; i >= Config::Motor::SERVO_MIN_POSITION; i -= Config::Servo::STEP_SIZE) {
             servoRight.writeMicroseconds(i);
-            delay(500);
+            delay(Config::Motor::SERVO_SEQUENCE_DELAY_MS);
         }
     } else if (sequenceType == 2) {
         waitForLimitSwitch(Config::Pins::LIMIT_SWITCH_2);
-        delay(1000);
+        delay(Config::Timing::LIMIT_SWITCH_WAIT_DELAY_MS);
     }
 }
 
@@ -50,21 +50,21 @@ void MotorController::stopDCMotor() {
 }
 
 void MotorController::moveDCMotorLeft() {
-    digitalWrite(Config::Pins::DRIVER_MOTOR_A1, LOW);
-    digitalWrite(Config::Pins::DRIVER_MOTOR_A2, HIGH);
-}
-
-void MotorController::moveDCMotorRight() {
     digitalWrite(Config::Pins::DRIVER_MOTOR_A1, HIGH);
     digitalWrite(Config::Pins::DRIVER_MOTOR_A2, LOW);
 }
 
+void MotorController::moveDCMotorRight() {
+    digitalWrite(Config::Pins::DRIVER_MOTOR_A1, LOW);
+    digitalWrite(Config::Pins::DRIVER_MOTOR_A2, HIGH);
+}
+
 bool MotorController::isLimitSwitch1Pressed() {
-    return digitalRead(Config::Pins::LIMIT_SWITCH_1) == LOW;
+    return digitalRead(Config::Pins::LIMIT_SWITCH_1) == HIGH;
 }
 
 bool MotorController::isLimitSwitch2Pressed() {
-    return digitalRead(Config::Pins::LIMIT_SWITCH_2) == LOW;
+    return digitalRead(Config::Pins::LIMIT_SWITCH_2) == HIGH;
 }
 
 void MotorController::initializePins() {

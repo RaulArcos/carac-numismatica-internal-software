@@ -6,10 +6,9 @@ void Communication::begin() {
     Serial.begin(Config::Communication::BAUD_RATE);
     
     while (!Serial) {
-        delay(10);
+        delay(Config::Timing::SERIAL_WAIT_DELAY_MS);
     }
     
-    // Initialize lastHeartbeat to current time to start heartbeat timer
     lastHeartbeat = millis();
     
     StaticJsonDocument<Config::Communication::BUFFER_SIZE> doc;
@@ -36,14 +35,14 @@ void Communication::update() {
     }
     
     unsigned long currentTime = millis();
-    if (currentTime - lastHeartbeat >= 5000) {
+    if (currentTime - lastHeartbeat >= Config::Communication::HEARTBEAT_INTERVAL_MS) {
         sendHeartbeat();
         lastHeartbeat = currentTime;
     }
 }
 
 void Communication::registerMessageHandler(const char* messageType, MessageHandler handler) {
-    if (handlerCount < 20) {
+    if (handlerCount < MAX_HANDLERS) {
         handlerTypes[handlerCount] = messageType;
         handlers[handlerCount] = handler;
         handlerCount++;

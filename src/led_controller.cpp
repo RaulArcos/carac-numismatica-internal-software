@@ -1,12 +1,16 @@
 #include "../include/led_controller.h"
 
 LEDController::LEDController() 
-    : pixels(Config::LED::TOTAL_PIXELS, Config::Pins::LED_STRIP, NEO_GRB + NEO_KHZ800) {
+    : pixels(Config::LED::TOTAL_PIXELS, Config::Pins::LED_STRIP, NEO_GRB + NEO_KHZ800)
+    , backlightState(false) {
 }
 
 void LEDController::begin() {
     pixels.begin();
     turnOff();
+    
+    pinMode(Config::Pins::LED_BACKLIGHT, OUTPUT);
+    digitalWrite(Config::Pins::LED_BACKLIGHT, LOW);
 }
 
 void LEDController::setSector(uint8_t sector, uint8_t percentage) {
@@ -24,9 +28,9 @@ void LEDController::setRing(uint8_t ringIndex, uint8_t intensity) {
     pixels.show();
 }
 
-void LEDController::setSectorAcrossAllRings(uint8_t sectorIndex, uint8_t intensity) {
-    for (uint8_t ringIndex = 0; ringIndex < Config::LED::NUM_RINGS; ringIndex++) {
-        uint8_t ledIndex = ringIndex * Config::LED::LEDS_PER_RING + sectorIndex;
+void LEDController::setSectorAcrossAllRings(uint8_t ringIndex, uint8_t intensity) {
+    for (uint8_t sector = 0; sector < Config::LED::NUM_SECTORS; sector++) {
+        uint8_t ledIndex = sector * Config::LED::NUM_RINGS + ringIndex;
         if (ledIndex < Config::LED::TOTAL_PIXELS) {
             pixels.setPixelColor(ledIndex, pixels.Color(intensity, intensity, intensity));
         }
@@ -77,9 +81,18 @@ void LEDController::setBrightness(uint8_t brightness) {
 }
 
 uint8_t LEDController::mapPercentage(uint8_t percentage) {
-    return map(percentage, 0, 100, 0, 255);
+    return map(percentage, Config::System::PERCENTAGE_MIN, Config::System::PERCENTAGE_MAX, Config::System::MIN_INTENSITY, Config::System::MAX_INTENSITY);
 }
 
 bool LEDController::isStripSector(uint8_t sector) {
     return sector > Config::LED::NUM_RING_PIXELS;
+}
+
+void LEDController::setBacklight(bool state) {
+    backlightState = state;
+    digitalWrite(Config::Pins::LED_BACKLIGHT, state ? HIGH : LOW);
+}
+
+bool LEDController::getBacklightState() {
+    return backlightState;
 }

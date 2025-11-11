@@ -11,21 +11,21 @@ void WeightSensor::begin() {
 }
 
 float WeightSensor::getWeight() {
-    if (loadcell.wait_ready_timeout(1000)) {
+    if (loadcell.wait_ready_timeout(Config::Weight::READY_TIMEOUT_MS)) {
         return loadcell.get_units(Config::Weight::DEFAULT_SAMPLES);
     }
     return 0.0f;
 }
 
 float WeightSensor::getWeightWithSamples(uint8_t samples) {
-    if (loadcell.wait_ready_timeout(1000)) {
+    if (loadcell.wait_ready_timeout(Config::Weight::READY_TIMEOUT_MS)) {
         return loadcell.get_units(samples);
     }
     return 0.0f;
 }
 
 void WeightSensor::tare() {
-    if (loadcell.wait_ready_timeout(1000)) {
+    if (loadcell.wait_ready_timeout(Config::Weight::READY_TIMEOUT_MS)) {
         loadcell.tare(Config::Weight::DEFAULT_SAMPLES);
     }
 }

@@ -14,15 +14,22 @@ public:
     void update();
 
 private:
-    static constexpr uint8_t NUM_RING_CHANNELS = 4;
     
-    struct PhotoSequenceState {
+    enum CoinSequenceStep {
+        STEP_MOVE_RIGHT = 0,
+        STEP_WAIT1 = 1,
+        STEP_FLIP = 2,
+        STEP_WAIT2 = 3,
+        STEP_BACKLIGHT_ON = 4,
+        STEP_WAIT3 = 5,
+        STEP_MOVE_LEFT = 6,
+        STEP_COMPLETE = 7
+    };
+    
+    struct CoinSequenceState {
         bool active;
-        int currentPhoto;
-        int totalPhotos;
-        float delay;
-        bool autoFlip;
-        unsigned long lastActionTime;
+        CoinSequenceStep currentStep;
+        unsigned long stepStartTime;
         unsigned long sequenceStartTime;
     };
     
@@ -33,8 +40,8 @@ private:
     
     bool ledTestState;
     int motorPosition;
-    uint8_t ringIntensities[NUM_RING_CHANNELS];
-    PhotoSequenceState sequenceState;
+    uint8_t ringIntensities[Config::System::NUM_RING_CHANNELS];
+    CoinSequenceState coinSequenceState;
     int flipCount;
     unsigned long lastWeightReading;
     
@@ -44,21 +51,18 @@ private:
     void handleMotorPosition(JsonObject payload);
     void handleMotorFlip(JsonObject payload);
     void handleCameraTrigger(JsonObject payload);
-    void handlePhotoSequenceStart(JsonObject payload);
     void handleSystemPing(JsonObject payload);
     void handleSystemStatus(JsonObject payload);
     void handleSystemReset(JsonObject payload);
     void handleSystemEmergencyStop(JsonObject payload);
     void handleTestLedToggle(JsonObject payload);
+    void handleSetBacklight(JsonObject payload);
+    void handleCoinSequenceStart(JsonObject payload);
     
-    void processPhotoSequence();
-    void triggerCamera(int duration);
+    void processCoinSequence();
     void flipCoin();
     int getRingIndexFromChannel(const char* channel);
     void resetSystemState();
     void stopAllMotors();
     void clearAllLighting();
-    void sendSequenceProgressEvent(const char* action);
-    void sendSequenceStoppedEvent(const char* reason, int photosTaken);
-    void sendSequenceCompletedEvent(unsigned long totalDuration);
 };
