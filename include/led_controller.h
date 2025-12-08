@@ -19,6 +19,7 @@ public:
 
 private:
     Adafruit_NeoPixel pixels;
+    Adafruit_NeoPixel backlightPixels;
     bool backlightState;
     
     uint8_t mapPercentage(uint8_t percentage);

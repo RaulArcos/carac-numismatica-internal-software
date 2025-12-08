@@ -2,6 +2,7 @@
 
 LEDController::LEDController() 
     : pixels(Config::LED::TOTAL_PIXELS, Config::Pins::LED_STRIP, NEO_GRB + NEO_KHZ800)
+    , backlightPixels(Config::LED::BACKLIGHT_LED_COUNT, Config::Pins::LED_BACKLIGHT, NEO_GRB + NEO_KHZ800)
     , backlightState(false) {
 }
 
@@ -9,8 +10,10 @@ void LEDController::begin() {
     pixels.begin();
     turnOff();
     
-    pinMode(Config::Pins::LED_BACKLIGHT, OUTPUT);
-    digitalWrite(Config::Pins::LED_BACKLIGHT, LOW);
+    backlightPixels.begin();
+    backlightPixels.setBrightness(Config::LED::BACKLIGHT_BRIGHTNESS);
+    backlightPixels.clear();
+    backlightPixels.show();
 }
 
 void LEDController::setSector(uint8_t sector, uint8_t percentage) {
@@ -90,7 +93,15 @@ bool LEDController::isStripSector(uint8_t sector) {
 
 void LEDController::setBacklight(bool state) {
     backlightState = state;
-    digitalWrite(Config::Pins::LED_BACKLIGHT, state ? HIGH : LOW);
+    
+    if (state) {
+        for (uint8_t i = 0; i < Config::LED::BACKLIGHT_LED_COUNT; i++) {
+            backlightPixels.setPixelColor(i, backlightPixels.Color(255, 255, 255));
+        }
+    } else {
+        backlightPixels.clear();
+    }
+    backlightPixels.show();
 }
 
 bool LEDController::getBacklightState() {

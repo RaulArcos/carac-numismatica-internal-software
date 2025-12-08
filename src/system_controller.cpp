@@ -10,7 +10,7 @@ SystemController::SystemController()
     }
     
     coinSequenceState.active = false;
-    coinSequenceState.currentStep = STEP_MOVE_RIGHT;
+    coinSequenceState.currentStep = STEP_MOVE_FORWARD;
     coinSequenceState.stepStartTime = 0;
     coinSequenceState.sequenceStartTime = 0;
 }
@@ -288,7 +288,7 @@ void SystemController::handleCoinSequenceStart(JsonObject payload) {
     }
     
     coinSequenceState.active = true;
-    coinSequenceState.currentStep = STEP_MOVE_RIGHT;
+    coinSequenceState.currentStep = STEP_MOVE_FORWARD;
     coinSequenceState.stepStartTime = millis();
     coinSequenceState.sequenceStartTime = millis();
     
@@ -296,7 +296,7 @@ void SystemController::handleCoinSequenceStart(JsonObject payload) {
     
     StaticJsonDocument<Config::System::JSON_DOC_SIZE> eventDoc;
     JsonObject eventPayload = eventDoc.to<JsonObject>();
-    eventPayload["step"] = "move_right";
+    eventPayload["step"] = "move_forward";
     comm.sendEvent("event_coin_sequence_started", eventPayload);
 }
 
@@ -393,26 +393,12 @@ void SystemController::processCoinSequence() {
     unsigned long elapsed = currentTime - coinSequenceState.stepStartTime;
     
     switch (coinSequenceState.currentStep) {
-        case STEP_MOVE_RIGHT: {
+        case STEP_MOVE_FORWARD: {
             motors.moveDCMotorRight();
             if (motors.isLimitSwitch2Pressed()) {
                 motors.stopDCMotor();
                 motorPosition += (currentTime - coinSequenceState.stepStartTime);
                 
-                StaticJsonDocument<Config::System::JSON_DOC_SIZE> eventDoc;
-                JsonObject eventPayload = eventDoc.to<JsonObject>();
-                eventPayload["step"] = "waiting";
-                eventPayload["wait_number"] = 1;
-                comm.sendEvent("event_coin_sequence_progress", eventPayload);
-                
-                coinSequenceState.currentStep = STEP_WAIT1;
-                coinSequenceState.stepStartTime = currentTime;
-            }
-            break;
-        }
-            
-        case STEP_WAIT1: {
-            if (elapsed >= Config::System::COIN_SEQUENCE_WAIT_MS) {
                 StaticJsonDocument<Config::System::JSON_DOC_SIZE> eventDoc;
                 JsonObject eventPayload = eventDoc.to<JsonObject>();
                 eventPayload["step"] = "flipping";
@@ -431,15 +417,15 @@ void SystemController::processCoinSequence() {
             StaticJsonDocument<Config::System::JSON_DOC_SIZE> eventDoc;
             JsonObject eventPayload = eventDoc.to<JsonObject>();
             eventPayload["step"] = "waiting";
-            eventPayload["wait_number"] = 2;
+            eventPayload["wait_number"] = 1;
             comm.sendEvent("event_coin_sequence_progress", eventPayload);
             
-            coinSequenceState.currentStep = STEP_WAIT2;
+            coinSequenceState.currentStep = STEP_WAIT1;
             coinSequenceState.stepStartTime = currentTime;
             break;
         }
             
-        case STEP_WAIT2: {
+        case STEP_WAIT1: {
             if (elapsed >= Config::System::COIN_SEQUENCE_WAIT_MS) {
                 leds.setBacklight(true);
                 
@@ -455,24 +441,37 @@ void SystemController::processCoinSequence() {
         }
             
         case STEP_BACKLIGHT_ON:
-            coinSequenceState.currentStep = STEP_WAIT3;
+            coinSequenceState.currentStep = STEP_WAIT2;
             coinSequenceState.stepStartTime = currentTime;
             break;
             
-        case STEP_WAIT3: {
+        case STEP_WAIT2: {
             if (elapsed >= Config::System::COIN_SEQUENCE_WAIT_MS) {
+                leds.setBacklight(false);
+                
                 StaticJsonDocument<Config::System::JSON_DOC_SIZE> eventDoc;
                 JsonObject eventPayload = eventDoc.to<JsonObject>();
-                eventPayload["step"] = "moving_left";
+                eventPayload["step"] = "backlight_off";
                 comm.sendEvent("event_coin_sequence_progress", eventPayload);
                 
-                coinSequenceState.currentStep = STEP_MOVE_LEFT;
+                coinSequenceState.currentStep = STEP_BACKLIGHT_OFF;
                 coinSequenceState.stepStartTime = currentTime;
             }
             break;
         }
             
-        case STEP_MOVE_LEFT:
+        case STEP_BACKLIGHT_OFF: {
+            StaticJsonDocument<Config::System::JSON_DOC_SIZE> eventDoc;
+            JsonObject eventPayload = eventDoc.to<JsonObject>();
+            eventPayload["step"] = "moving_backward";
+            comm.sendEvent("event_coin_sequence_progress", eventPayload);
+            
+            coinSequenceState.currentStep = STEP_MOVE_BACKWARD;
+            coinSequenceState.stepStartTime = currentTime;
+            break;
+        }
+            
+        case STEP_MOVE_BACKWARD:
             motors.moveDCMotorLeft();
             if (motors.isLimitSwitch1Pressed()) {
                 motors.stopDCMotor();
@@ -498,13 +497,7 @@ void SystemController::processCoinSequence() {
 }
 
 void SystemController::flipCoin() {
-    motors.moveServoLeft(Config::Servo::MAX_POSITION);
-    delay(Config::Motor::SERVO_FLIP_DELAY_MS);
-    motors.moveServoRight(Config::Servo::MAX_POSITION);
-    delay(Config::Motor::SERVO_FLIP_DELAY_MS);
-    motors.moveServoLeft(Config::Servo::NEUTRAL_POSITION);
-    motors.moveServoRight(Config::Servo::NEUTRAL_POSITION);
-    delay(Config::Motor::SERVO_FLIP_DELAY_MS);
+    motors.executeSequence(1);
 }
 
 int SystemController::getRingIndexFromChannel(const char* channel) {
@@ -519,8 +512,8 @@ void SystemController::resetSystemState() {
     clearAllLighting();
     stopAllMotors();
     
-    motors.moveServoLeft(Config::Servo::NEUTRAL_POSITION);
-    motors.moveServoRight(Config::Servo::NEUTRAL_POSITION);
+    motors.moveServoLeft(Config::Servo::NEUTRAL_POSITION_LEFT);
+    motors.moveServoRight(Config::Servo::NEUTRAL_POSITION_RIGHT);
     
     coinSequenceState.active = false;
     

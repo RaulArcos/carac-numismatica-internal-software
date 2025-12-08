@@ -16,13 +16,13 @@ public:
 private:
     
     enum CoinSequenceStep {
-        STEP_MOVE_RIGHT = 0,
-        STEP_WAIT1 = 1,
-        STEP_FLIP = 2,
-        STEP_WAIT2 = 3,
-        STEP_BACKLIGHT_ON = 4,
-        STEP_WAIT3 = 5,
-        STEP_MOVE_LEFT = 6,
+        STEP_MOVE_FORWARD = 0,
+        STEP_FLIP = 1,
+        STEP_WAIT1 = 2,
+        STEP_BACKLIGHT_ON = 3,
+        STEP_WAIT2 = 4,
+        STEP_BACKLIGHT_OFF = 5,
+        STEP_MOVE_BACKWARD = 6,
         STEP_COMPLETE = 7
     };
     

@@ -10,30 +10,27 @@ void MotorController::begin() {
 
 void MotorController::executeSequence(uint8_t sequenceType) {
     if (sequenceType == 1) {
-        for (int i = Config::Servo::NEUTRAL_POSITION; i <= Config::Servo::MAX_POSITION; i += Config::Servo::STEP_SIZE) {
+        for (int i = Config::Servo::NEUTRAL_POSITION_LEFT; i <= Config::Servo::MAX_POSITION_LEFT; i += Config::Servo::STEP_SIZE) {
             servoLeft.writeMicroseconds(i);
             delay(Config::Motor::SERVO_DELAY_MS);
         }
-        
-        waitForLimitSwitch(Config::Pins::LIMIT_SWITCH_1);
-        delay(Config::Timing::LIMIT_SWITCH_WAIT_DELAY_MS);
-        
-        for (int i = Config::Servo::NEUTRAL_POSITION; i <= Config::Servo::MAX_POSITION; i += Config::Servo::STEP_SIZE) {
+        int j = 0;
+        for (int i = Config::Servo::NEUTRAL_POSITION_RIGHT; i <= Config::Servo::MAX_POSITION_RIGHT; i += Config::Servo::STEP_SIZE) {
             servoRight.writeMicroseconds(i);
             delay(Config::Motor::SERVO_DELAY_MS);
-            servoLeft.writeMicroseconds(Config::Motor::SERVO_MAX_CALCULATED - i);
+            if ((Config::Servo::MAX_POSITION_LEFT - j) >= Config::Servo::NEUTRAL_POSITION_LEFT){
+                servoLeft.writeMicroseconds(Config::Servo::MAX_POSITION_LEFT - j);
+            }
+            j+= Config::Servo::STEP_SIZE;
             delay(Config::Motor::SERVO_DELAY_MS);
         }
-        delay(Config::Motor::SERVO_SEQUENCE_DELAY_MS);
         
-        for (int i = Config::Servo::NEUTRAL_POSITION; i >= Config::Motor::SERVO_MIN_POSITION; i -= Config::Servo::STEP_SIZE) {
+        for (int i = Config::Servo::MAX_POSITION_RIGHT; i >= Config::Servo::NEUTRAL_POSITION_RIGHT; i -= Config::Servo::STEP_SIZE) {
             servoRight.writeMicroseconds(i);
-            delay(Config::Motor::SERVO_SEQUENCE_DELAY_MS);
+            delay(Config::Motor::SERVO_DELAY_MS);
         }
-    } else if (sequenceType == 2) {
-        waitForLimitSwitch(Config::Pins::LIMIT_SWITCH_2);
-        delay(Config::Timing::LIMIT_SWITCH_WAIT_DELAY_MS);
     }
+    setServosToNeutral();
 }
 
 void MotorController::moveServoLeft(uint16_t position) {
@@ -78,8 +75,8 @@ void MotorController::initializePins() {
 }
 
 void MotorController::setServosToNeutral() {
-    servoLeft.writeMicroseconds(Config::Servo::NEUTRAL_POSITION);
-    servoRight.writeMicroseconds(Config::Servo::NEUTRAL_POSITION);
+    servoLeft.writeMicroseconds(Config::Servo::NEUTRAL_POSITION_LEFT);
+    servoRight.writeMicroseconds(Config::Servo::NEUTRAL_POSITION_RIGHT);
 }
 
 void MotorController::waitForLimitSwitch(uint8_t switchPin) {

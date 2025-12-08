@@ -31,21 +31,31 @@ namespace Config {
         constexpr uint8_t NUM_SECTORS = TOTAL_PIXELS / NUM_RINGS;  
         constexpr uint8_t LEDS_PER_SECTOR = NUM_RINGS;
         constexpr uint8_t NUM_SECTORS_PER_RING = 4; 
-        constexpr uint8_t LEDS_PER_RING = NUM_STRIP_PIXELS / NUM_RINGS; 
+        constexpr uint8_t LEDS_PER_RING = NUM_STRIP_PIXELS / NUM_RINGS;
+        constexpr uint8_t BACKLIGHT_LED_COUNT = 21;
+        constexpr uint8_t BACKLIGHT_BRIGHTNESS = 100;
     }
 
     namespace Servo {
         constexpr uint16_t MIN_PULSE_US = 650;
         constexpr uint16_t MAX_PULSE_US = 2700;
-        constexpr uint16_t NEUTRAL_POSITION = 710;
-        constexpr uint16_t MAX_POSITION = 2500;
-        constexpr uint8_t STEP_SIZE = 10;
+        
+        constexpr uint16_t NEUTRAL_POSITION_LEFT = 710;
+        constexpr uint16_t MAX_POSITION_LEFT = 2700;
+        
+        constexpr uint16_t NEUTRAL_POSITION_RIGHT = 710;
+        constexpr uint16_t MAX_POSITION_RIGHT = 2700;
+
+        constexpr uint16_t NEUTRAL_POSITION = NEUTRAL_POSITION_LEFT;
+        constexpr uint16_t MAX_POSITION = MAX_POSITION_LEFT;
+        
+        constexpr uint8_t STEP_SIZE = 100;
     }
 
     namespace Weight {
-        constexpr uint8_t DEFAULT_SAMPLES = 3;
+        constexpr uint8_t DEFAULT_SAMPLES = 10;
         constexpr uint8_t HX711_BITS = 24;
-        constexpr float SCALE_FACTOR = -345.0f;
+        constexpr float SCALE_FACTOR = -418.5f;
         constexpr uint32_t READY_TIMEOUT_MS = 1000;
     }
 
@@ -61,7 +71,8 @@ namespace Config {
         constexpr uint16_t SERVO_FLIP_DELAY_MS = 100;
         constexpr uint16_t SERVO_SEQUENCE_DELAY_MS = 500;
         constexpr uint16_t SERVO_MIN_POSITION = 700;
-        constexpr uint16_t SERVO_MAX_CALCULATED = 3210;
+        // Calculated for synchronized movement: when right servo is at NEUTRAL_POSITION_RIGHT, left servo is at MAX_POSITION_LEFT
+        constexpr uint16_t SERVO_MAX_CALCULATED = Config::Servo::MAX_POSITION_LEFT + Config::Servo::NEUTRAL_POSITION_RIGHT;
         constexpr uint16_t FLIP_EVENT_DURATION_MS = 200;
     }
 
